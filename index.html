@@ -43,6 +43,13 @@ body {
   transition: all .2s; box-shadow: 0 3px 8px rgba(0,0,0,.3);
 }
 .print-btn:hover { background: #1a4a1a; transform: translateY(-1px); }
+.calc-btn {
+  background: linear-gradient(135deg,#1a1a2e,#0066cc); color: #fff; border: none; border-radius: 6px;
+  padding: 9px 20px; font-family: 'Montserrat', sans-serif; font-weight: 800;
+  font-size: .72rem; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer;
+  transition: all .2s; box-shadow: 0 3px 12px rgba(0,0,102,.35);
+}
+.calc-btn:hover { background: linear-gradient(135deg,#0066cc,#0099ff); transform: translateY(-1px); }
 .save-btn {
   background: linear-gradient(135deg,#7a4c12,#c4901a); color: #fff; border: none; border-radius: 6px;
   padding: 9px 20px; font-family: 'Montserrat', sans-serif; font-weight: 800;
@@ -360,9 +367,78 @@ body { background: #fff; padding: 0; display: block; }
 <div class="screen-nav">
   <button class="nav-btn active" onclick="showPage('am',this)">🌅 Morning</button>
   <button class="nav-btn" onclick="showPage('pm',this)">🌙 Evening</button>
+  <button class="calc-btn" onclick="showProgress()">📊 Calculate %</button>
   <button class="print-btn" onclick="window.print()">🖨️ Print</button>
   <button class="save-btn" onclick="savePDF()">💾 Save Today's PDF</button>
 </div>
+
+<!-- PROGRESS MODAL -->
+
+<div id="progressModal" style="display:none;position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);overflow-y:auto;padding:20px 12px;">
+  <div style="max-width:500px;margin:0 auto;background:#fafaf6;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);">
+
+```
+<!-- Modal Header -->
+<div id="modalHeader" style="padding:24px 24px 18px;text-align:center;position:relative;">
+  <button onclick="closeProgress()" style="position:absolute;top:14px;right:16px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:1.2rem;width:30px;height:30px;border-radius:50%;cursor:pointer;font-weight:900;display:flex;align-items:center;justify-content:center;">✕</button>
+  <div id="modalEmoji" style="font-size:3rem;margin-bottom:8px">📊</div>
+  <div id="modalTitle" style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:1rem;letter-spacing:2px;text-transform:uppercase;color:#fff;margin-bottom:4px">Today's Score</div>
+  <div id="modalDate" style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:.65rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.75)"></div>
+</div>
+
+<!-- Big % Display -->
+<div style="padding:0 24px 18px;text-align:center;background:inherit" id="modalBg">
+  <div style="position:relative;display:inline-block;margin-bottom:12px">
+    <svg width="160" height="160" viewBox="0 0 160 160">
+      <circle cx="80" cy="80" r="68" fill="none" stroke="#e0e0e0" stroke-width="12"/>
+      <circle id="progressCircle" cx="80" cy="80" r="68" fill="none" stroke="#2a7a2a" stroke-width="12"
+        stroke-linecap="round" stroke-dasharray="427" stroke-dashoffset="427"
+        transform="rotate(-90 80 80)" style="transition:stroke-dashoffset 1.2s ease,stroke .4s"/>
+    </svg>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <div id="pctNumber" style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:2.2rem;color:#1a1a1a;line-height:1">0%</div>
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:.55rem;letter-spacing:2px;text-transform:uppercase;color:#aaa">completed</div>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div style="background:#e0e0e0;border-radius:99px;height:12px;overflow:hidden;margin-bottom:8px">
+    <div id="progressBar" style="height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,#2a7a2a,#4caf50);transition:width 1.2s ease"></div>
+  </div>
+  <div id="progressFraction" style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:.65rem;letter-spacing:1px;color:#888;margin-bottom:16px">0 of 0 tasks completed</div>
+
+  <!-- Message Box -->
+  <div id="messageBox" style="border-radius:12px;padding:16px 18px;margin-bottom:14px;text-align:left">
+    <div id="messageTitle" style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:.75rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px"></div>
+    <div id="messageBody" style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:.67rem;line-height:1.65;color:#333"></div>
+  </div>
+
+  <!-- Streak Box -->
+  <div id="streakBox" style="background:linear-gradient(135deg,#1a1a2e,#2a1a08);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+    <div style="font-size:2rem">🔥</div>
+    <div>
+      <div id="streakTitle" style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:.72rem;letter-spacing:1px;text-transform:uppercase;color:#f9ca24;margin-bottom:3px"></div>
+      <div id="streakMsg" style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:.62rem;color:#f5e8d2;line-height:1.5"></div>
+    </div>
+  </div>
+
+  <!-- Breakdown -->
+  <div id="breakdown" style="background:#f5f0e8;border-radius:12px;padding:14px 16px;margin-bottom:16px">
+    <div style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:.65rem;letter-spacing:2px;text-transform:uppercase;color:#888;margin-bottom:10px">📋 Category Breakdown</div>
+    <div id="breakdownList"></div>
+  </div>
+
+  <button onclick="closeProgress()" style="width:100%;background:linear-gradient(135deg,#2a1a08,#7a4c12);color:#f9ca24;border:none;border-radius:10px;padding:13px;font-family:'Montserrat',sans-serif;font-weight:900;font-size:.72rem;letter-spacing:2px;text-transform:uppercase;cursor:pointer">Close & Keep Going 💪</button>
+</div>
+```
+
+  </div>
+</div>
+
+<!-- FIREWORKS CANVAS -->
+
+<canvas id="fireworksCanvas" style="display:none;position:fixed;inset:0;z-index:19999;pointer-events:none"></canvas>
+
 <div id="saveToast" style="display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1a3a1a;color:#e0ffe0;font-family:'Montserrat',sans-serif;font-weight:800;font-size:.72rem;letter-spacing:1.5px;text-transform:uppercase;padding:12px 28px;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:9999;text-align:center;white-space:nowrap">✅ Printing dialog opened — choose "Save as PDF" &amp; name it with today's date!</div>
 
 <!-- ═══════════ MORNING PAGE ═══════════ -->
@@ -1024,7 +1100,297 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <script>
-// ─── DATA ───────────────────────────────────────────────
+// ─── PROGRESS TRACKING ──────────────────────────────────
+
+// All trackable items with weights & categories
+function getTrackableItems() {
+  return [
+    // Morning habits (each = 1 point)
+    ...Array.from(document.querySelectorAll('#page-am .cb-cell, #page-am .cb-half-cell'))
+      .map(el => ({ el, cat: '☀️ Morning Habits', done: el.classList.contains('ticked') })),
+    // Supplements (each = 1 point)
+    ...Array.from(document.querySelectorAll('.supp-cell'))
+      .map(el => ({ el, cat: '💊 Supplements', done: el.className.includes('ticked') })),
+    // Water (counts as 1 if ≥ 4 cups)
+    { cat: '💧 Water', done: document.querySelectorAll('.wcup.full').length >= 4 },
+    // Mood set
+    { cat: '😊 Mood Check-In', done: !!document.querySelector('#page-am .mbtn.picked') },
+    // Prayers (morning) — count filled
+    ...['mp1','mp2','mp3','mp4','mp5','mp6','mp7'].map(id => {
+      const el = document.getElementById(id);
+      return { cat: '🙏 Prayers', done: el && el.value !== '' };
+    }),
+    // Affirmations — count filled selects in affirmations section
+    ...Array.from(document.querySelectorAll('#page-am .drop-area select')).slice(0,7)
+      .map(el => ({ cat: '💪 Affirmations', done: el.value !== '' })),
+    // Gratitude — count filled
+    ...['grat1','grat2','grat3','grat4','grat5','grat6','grat7'].map(id => {
+      const el = document.getElementById(id);
+      return { cat: '🌸 Gratitude', done: el && el.value !== '' };
+    }),
+    // Morning goals ticked
+    ...Array.from(document.querySelectorAll('#morningGoals .g-tick'))
+      .map(el => ({ cat: '🎯 Goals', done: el.classList.contains('done') })),
+    // Meals logged
+    ...Array.from(document.querySelectorAll('.ml-mini-drop'))
+      .map(el => ({ cat: '🥗 Meals', done: el.value !== '' })),
+    // Calorie + protein totals set
+    ...Array.from(document.querySelectorAll('.mg-drop'))
+      .map(el => ({ cat: '🥗 Meals', done: el.value !== '' })),
+    // Evening habits
+    ...Array.from(document.querySelectorAll('#page-pm .cb-cell'))
+      .map(el => ({ cat: '🌙 Evening Habits', done: el.classList.contains('ticked') })),
+    // Evening todos ticked
+    ...Array.from(document.querySelectorAll('#eveningTodos .g-tick'))
+      .map(el => ({ cat: '📋 To-Do List', done: el.classList.contains('done') })),
+    // Evening mood
+    { cat: '🌙 Evening Mood', done: !!document.querySelector('#page-pm .mbtn.picked') },
+    // Evening prayers
+    ...['ep1','ep2','ep3','ep4','ep5','ep6','ep7'].map(id => {
+      const el = document.getElementById(id);
+      return { cat: '🙏 Evening Prayers', done: el && el.value !== '' };
+    }),
+  ];
+}
+
+function calcProgress() {
+  const items = getTrackableItems();
+  const total = items.length;
+  const done = items.filter(i => i.done).length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  // Category breakdown
+  const cats = {};
+  items.forEach(item => {
+    if (!cats[item.cat]) cats[item.cat] = { total: 0, done: 0 };
+    cats[item.cat].total++;
+    if (item.done) cats[item.cat].done++;
+  });
+
+  return { pct, done, total, cats };
+}
+
+// Streak storage (in-memory for session, persists via localStorage)
+function getStreak() {
+  try {
+    const data = JSON.parse(localStorage.getItem('journal-streak') || '{"streak":0,"lastDate":"","bestStreak":0}');
+    return data;
+  } catch(e) { return { streak: 0, lastDate: '', bestStreak: 0 }; }
+}
+function saveStreak(data) {
+  try { localStorage.setItem('journal-streak', JSON.stringify(data)); } catch(e) {}
+}
+function updateStreak(pct) {
+  const today = new Date().toISOString().split('T')[0];
+  const s = getStreak();
+  if (s.lastDate === today) return s; // already recorded today
+  if (pct >= 80) {
+    // check if yesterday
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    s.streak = (s.lastDate === yesterday) ? s.streak + 1 : 1;
+    s.bestStreak = Math.max(s.bestStreak, s.streak);
+  } else {
+    s.streak = 0;
+  }
+  s.lastDate = today;
+  saveStreak(s);
+  return s;
+}
+
+function showProgress() {
+  const { pct, done, total, cats } = calcProgress();
+  const streak = getStreak();
+
+  // Update streak if ≥80%
+  const updatedStreak = pct >= 80 ? updateStreak(pct) : streak;
+
+  const modal = document.getElementById('progressModal');
+  modal.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+
+  // Date
+  const d = new Date();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  document.getElementById('modalDate').textContent = `${days[d.getDay()]} · ${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+
+  // Animate circle
+  setTimeout(() => {
+    const circumference = 427;
+    const offset = circumference - (pct / 100) * circumference;
+    const circle = document.getElementById('progressCircle');
+    circle.style.strokeDashoffset = offset;
+
+    // Colour based on %
+    let colour, headerBg, barBg;
+    if (pct >= 80) { colour='#2a7a2a'; headerBg='linear-gradient(135deg,#1a5a1a,#2a7a2a)'; barBg='linear-gradient(90deg,#2a7a2a,#4caf50)'; }
+    else if (pct >= 50) { colour='#c4901a'; headerBg='linear-gradient(135deg,#7a4c12,#c4901a)'; barBg='linear-gradient(90deg,#c4901a,#f9ca24)'; }
+    else { colour='#c0392b'; headerBg='linear-gradient(135deg,#7a0a0a,#c0392b)'; barBg='linear-gradient(90deg,#c0392b,#e74c3c)'; }
+
+    circle.style.stroke = colour;
+    document.getElementById('modalHeader').style.background = headerBg;
+    document.getElementById('progressBar').style.background = barBg;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('pctNumber').textContent = pct + '%';
+    document.getElementById('progressFraction').textContent = `${done} of ${total} tasks completed`;
+
+    // Emoji & title
+    let emoji, title;
+    if (pct === 100) { emoji='🏆'; title='Perfect Day!'; }
+    else if (pct >= 80) { emoji='🌟'; title='Outstanding Day!'; }
+    else if (pct >= 50) { emoji='💪'; title='Good Effort!'; }
+    else { emoji='💙'; title='Tomorrow Is New'; }
+    document.getElementById('modalEmoji').textContent = emoji;
+    document.getElementById('modalTitle').textContent = title;
+
+    // Message
+    const msgBox = document.getElementById('messageBox');
+    const msgTitle = document.getElementById('messageTitle');
+    const msgBody = document.getElementById('messageBody');
+    if (pct >= 80) {
+      msgBox.style.background = '#e8f5e8';
+      msgBox.style.border = '2px solid #2a7a2a';
+      msgTitle.style.color = '#1a5a1a';
+      msgTitle.textContent = '🎉 Incredible Work Today!';
+      const msgs = [
+        "You showed up for yourself today and that is everything. Your consistency is building something extraordinary — keep this momentum going! Every day above 80% is a vote for the life you deserve. 🌟",
+        "Look at you — absolutely crushing it! Your discipline today is shaping tomorrow's freedom. Your liver is healing, your mind is growing, and your spirit is soaring. You are unstoppable! 💪",
+        "This is what transformation looks like — one checked box at a time, one prayer at a time, one grateful moment at a time. You are doing it. Be proud of yourself today! 🙏",
+      ];
+      msgBody.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+    } else if (pct >= 50) {
+      msgBox.style.background = '#fff8e8';
+      msgBox.style.border = '2px solid #c4901a';
+      msgTitle.style.color = '#7a4c12';
+      msgTitle.textContent = '👏 You Showed Up — That Matters!';
+      const msgs = [
+        "More than half done is still a win! Life isn't always perfect and that's completely okay. Reflect on what got in the way today — not with judgment, but with curiosity. Tomorrow, pick 3 key habits and commit to those first. You've got this! 🌅",
+        "Every step counts, even the small ones. You showed up today and that already makes you ahead of where you were. Look at what you completed, celebrate it, and identify one thing to improve tomorrow. Progress not perfection! 🌸",
+      ];
+      msgBody.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+    } else {
+      msgBox.style.background = '#fff0f0';
+      msgBox.style.border = '2px solid #c0392b';
+      msgTitle.style.color = '#7a0a0a';
+      msgTitle.textContent = '💙 Breathe. Reflect. Recommit.';
+      const msgs = [
+        "Today was tough — and that's okay. Every great journey has difficult days. Take a deep breath right now. 🌬️ Ask yourself gently: what got in the way? Not to judge, but to understand. Tomorrow is a completely fresh start. Choose just 5 habits to focus on and build from there. You are not behind — you are learning. 💙",
+        "Low days are part of the process — they don't define you. What defines you is that you're here, tracking, and caring enough to try. Take 3 deep breaths. Forgive yourself fully. Write down ONE thing you'll do differently tomorrow. Then sleep well — tomorrow belongs to you. 🌙",
+      ];
+      msgBody.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+    }
+
+    // Streak
+    const streakTitle = document.getElementById('streakTitle');
+    const streakMsg = document.getElementById('streakMsg');
+    const currentStreak = pct >= 80 ? updatedStreak.streak : updatedStreak.streak;
+    const best = updatedStreak.bestStreak || streak.bestStreak || 0;
+
+    if (pct >= 80) {
+      streakTitle.textContent = `🔥 ${updatedStreak.streak}-Day Streak Above 80%!`;
+      if (updatedStreak.streak === 1) streakMsg.textContent = "Great start! Every streak begins with day one. Come back tomorrow to build it! 💪";
+      else if (updatedStreak.streak < 5) streakMsg.textContent = `${updatedStreak.streak} days strong! You're building a powerful habit. Keep going! 🌟`;
+      else if (updatedStreak.streak < 10) streakMsg.textContent = `${updatedStreak.streak} days in a row — this is incredible consistency! You are transforming! 🏆`;
+      else streakMsg.textContent = `${updatedStreak.streak} DAYS IN A ROW! You are absolutely extraordinary! Best streak: ${best} days. 🏅`;
+    } else {
+      streakMsg.textContent = pct >= 50
+        ? `Your streak is paused for today — reset it tomorrow by hitting 80%+! Best streak so far: ${best} days 🌅`
+        : `Streak paused — but not erased. Your best is ${best} days. Tomorrow, start fresh and rebuild! 💙`;
+      streakTitle.textContent = `Best Streak: ${best} Days 🏅`;
+    }
+
+    // Breakdown
+    const bl = document.getElementById('breakdownList');
+    bl.innerHTML = '';
+    Object.entries(cats).forEach(([cat, {total: t, done: dn}]) => {
+      const p = Math.round((dn/t)*100);
+      const col = p >= 80 ? '#2a7a2a' : p >= 50 ? '#c4901a' : '#c0392b';
+      bl.innerHTML += `
+        <div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+            <span style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:.6rem;color:#333">${cat}</span>
+            <span style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:.62rem;color:${col}">${dn}/${t} · ${p}%</span>
+          </div>
+          <div style="background:#e0e0e0;border-radius:99px;height:6px;overflow:hidden">
+            <div style="height:100%;width:${p}%;background:${col};border-radius:99px;transition:width 1s ease"></div>
+          </div>
+        </div>`;
+    });
+
+    // Fireworks if ≥ 80%
+    if (pct >= 80) setTimeout(() => launchFireworks(), 400);
+
+  }, 100);
+}
+
+function closeProgress() {
+  document.getElementById('progressModal').style.display = 'none';
+  document.body.style.overflow = '';
+  stopFireworks();
+}
+
+// ─── FIREWORKS ───────────────────────────────────────────
+let fwInterval = null;
+let fwFrame = null;
+
+function launchFireworks() {
+  const canvas = document.getElementById('fireworksCanvas');
+  canvas.style.display = 'block';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+
+  function Particle(x, y, color) {
+    this.x = x; this.y = y; this.color = color;
+    this.vx = (Math.random()-0.5)*8;
+    this.vy = (Math.random()-0.5)*8 - 3;
+    this.alpha = 1; this.radius = Math.random()*3+1;
+  }
+
+  function spawnBurst() {
+    const x = Math.random()*canvas.width;
+    const y = Math.random()*canvas.height*0.6;
+    const colors = ['#f9ca24','#e84393','#2ecc71','#0099ff','#ff6b35','#a29bfe','#fff','#f5e8d2'];
+    const col = colors[Math.floor(Math.random()*colors.length)];
+    for (let i=0;i<60;i++) particles.push(new Particle(x,y,col));
+  }
+
+  fwInterval = setInterval(spawnBurst, 400);
+  spawnBurst(); spawnBurst();
+
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for (let i=particles.length-1;i>=0;i--) {
+      const p=particles[i];
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.15; p.alpha-=0.018;
+      if(p.alpha<=0){particles.splice(i,1);continue;}
+      ctx.save(); ctx.globalAlpha=p.alpha;
+      ctx.fillStyle=p.color; ctx.beginPath();
+      ctx.arc(p.x,p.y,p.radius,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+    fwFrame = requestAnimationFrame(draw);
+  }
+  draw();
+  setTimeout(stopFireworks, 5000);
+}
+
+function stopFireworks() {
+  clearInterval(fwInterval);
+  cancelAnimationFrame(fwFrame);
+  const canvas = document.getElementById('fireworksCanvas');
+  if (canvas) { canvas.style.display='none'; canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); }
+}
+
+// Override tick functions to update a mini live counter in nav
+function updateMiniProgress() {
+  const { pct } = calcProgress();
+  const btn = document.querySelector('.calc-btn');
+  if (btn) btn.textContent = `📊 Today: ${pct}%`;
+}
+
+
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 const QUOTES = {
@@ -1612,10 +1978,10 @@ function showPage(id, btn) {
   document.getElementById('page-'+id).classList.add('active');
   btn.classList.add('active');
 }
-function tick(el) { el.classList.toggle('ticked'); if(el.classList.contains('ticked')) burst(el); }
-function tickHalf(el) { el.classList.toggle('ticked'); if(el.classList.contains('ticked')) burst(el); }
-function tickGoal(el) { el.classList.toggle('done'); if(el.classList.contains('done')) burst(el); }
-function markFilled(sel) { sel.classList.toggle('has-value', sel.value !== ''); }
+function tick(el) { el.classList.toggle('ticked'); if(el.classList.contains('ticked')) burst(el); updateMiniProgress(); }
+function tickHalf(el) { el.classList.toggle('ticked'); if(el.classList.contains('ticked')) burst(el); updateMiniProgress(); }
+function tickGoal(el) { el.classList.toggle('done'); if(el.classList.contains('done')) burst(el); updateMiniProgress(); }
+function markFilled(sel) { sel.classList.toggle('has-value', sel.value !== ''); updateMiniProgress(); }
 function reactToggle(el) { el.classList.toggle('reacted'); }
 
 function tickSupp(el, cls) {
